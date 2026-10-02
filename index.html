@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentación PPT: Descifrando la Seguridad y Permisos en Linux</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- KaTeX for Math formatting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #070a11;
+      color: #f1f5f9;
+    }
+    
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Terminal Styling */
+    .terminal-window {
+      background: #090e17;
+      border: 1px solid #1e293b;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070a11;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+
+    /* Animation effects */
+    .slide-enter {
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Vibrant Glow Accents */
+    .glow-cyan { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); }
+    .glow-amber { box-shadow: 0 0 25px rgba(245, 158, 11, 0.25); }
+    .glow-rose { box-shadow: 0 0 25px rgba(244, 63, 94, 0.25); }
+    .glow-emerald { box-shadow: 0 0 25px rgba(16, 185, 129, 0.25); }
+    .glow-purple { box-shadow: 0 0 25px rgba(168, 85, 247, 0.25); }
+
+    /* Custom Gradients */
+    .bg-gradient-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden select-none">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800/80 px-4 py-2.5 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <button onclick="toggleSidebar()" class="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition" title="Ver diapositivas">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+      <div class="p-2 bg-gradient-to-tr from-cyan-600 to-blue-500 text-white rounded-lg shadow-lg">
+        <i class="fa-solid fa-shield-cat text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+          Descifrando la Seguridad y Permisos en Linux
+          <span class="text-[10px] bg-cyan-500/20 text-cyan-300 font-mono px-2 py-0.5 rounded border border-cyan-500/30">ACT-3 VÍDEO EXPOSITIVO</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Presentación de Apoyo & Guion Sincronizado — <strong class="text-cyan-400">Jairo &amp; Ángela</strong></p>
+      </div>
+    </div>
+
+    <!-- Center Slide Counter -->
+    <div class="hidden sm:flex items-center space-x-2 bg-slate-950 px-3.5 py-1.5 rounded-full border border-slate-800 text-xs">
+      <span class="text-slate-400 font-mono">Diapositiva</span>
+      <span id="current-slide-num" class="text-cyan-400 font-bold font-mono text-sm">1</span>
+      <span class="text-slate-600">/</span>
+      <span id="total-slides-num" class="text-slate-400 font-mono">6</span>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-2">
+      <button id="toggle-prompter-btn" onclick="togglePrompter()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition flex items-center gap-2 shadow">
+        <i class="fa-solid fa-scroll"></i>
+        <span id="prompter-btn-text">Guion Sincronizado</span>
+      </button>
+      
+      <button onclick="toggleFullscreen()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Modo Pantalla Completa">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workbench Layout -->
+  <main class="flex-1 max-w-[1650px] w-full mx-auto p-3 sm:p-5 flex flex-col lg:flex-row gap-4 relative overflow-hidden">
+
+    <!-- Slide Thumbnails Sidebar -->
+    <aside id="slide-sidebar" class="w-full lg:w-72 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col gap-2 shrink-0 transition-all duration-300 hidden lg:flex">
+      <div class="text-xs font-bold text-slate-300 px-2 pb-2 border-b border-slate-800 flex items-center justify-between">
+        <span><i class="fa-solid fa-film text-cyan-400 mr-2"></i>Diapositivas de Estudio</span>
+        <span class="text-[10px] text-slate-400 font-mono bg-slate-800 px-2 py-0.5 rounded">6 láminas</span>
+      </div>
+      <div class="flex-1 space-y-2 overflow-y-auto pr-1" id="thumbnail-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </aside>
+
+    <!-- Main Slide Canvas -->
+    <div class="flex-1 flex flex-col justify-between space-y-3 min-w-0">
+
+      <!-- Slide Screen Viewport -->
+      <div id="slide-viewport" class="slide-enter flex-1 bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col justify-between shadow-2xl relative min-h-[580px]">
+        <!-- Injected dynamically by JS -->
+      </div>
+
+      <!-- PPT Control Toolbar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between shadow-xl">
+        <button id="prev-btn" onclick="prevSlide()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-medium text-xs sm:text-sm flex items-center gap-2 transition">
+          <i class="fa-solid fa-chevron-left"></i>
+          <span>Anterior</span>
+        </button>
+
+        <!-- Slide Indicators Dots -->
+        <div class="flex items-center space-x-2" id="dot-indicators">
+          <!-- Dots dynamically rendered -->
+        </div>
+
+        <button id="next-btn" onclick="nextSlide()" class="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition glow-cyan">
+          <span>Siguiente</span>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Teleprompter Script Panel -->
+    <aside id="prompter-panel" class="w-full lg:w-96 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-2xl transition-all duration-300">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2 text-amber-400 font-bold text-xs sm:text-sm">
+          <i class="fa-solid fa-microphone-lines text-amber-400"></i>
+          <span>Guion Teleprompter de Grabación</span>
+        </div>
+        <span class="text-[11px] font-mono text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20" id="prompter-time-tag">00:00 - 00:45</span>
+      </div>
+
+      <!-- Speaker Text List -->
+      <div id="prompter-body" class="flex-1 my-3 space-y-3 overflow-y-auto max-h-[520px] pr-2 text-xs leading-relaxed">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- Recording Tip -->
+      <div class="p-3 bg-slate-950 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2.5">
+        <i class="fa-solid fa-lightbulb text-amber-400 text-sm mt-0.5 shrink-0"></i>
+        <div>
+          <span class="font-semibold text-slate-200">Consejo para el Vídeo:</span>
+          <p class="text-slate-400 mt-0.5">Mencionen los conceptos clave mientras señalan con el cursor los cuadros de color correspondientes en la diapositiva.</p>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-2.5 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <span class="text-slate-400 font-medium">Presentadores:</span>
+      <span class="text-cyan-400 font-semibold">Jairo &amp; Ángela</span>
+      <span class="text-slate-600">|</span>
+      <span class="text-slate-300">Sistemas Operativos (ACT-3)</span>
+    </div>
+    <div class="font-mono text-[11px] text-slate-400">
+      Atajos de teclado: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">→</kbd> o <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">Espacio</kbd>
+    </div>
+  </footer>
+
+  <script>
+    // State Variables
+    let currentSlide = 0;
+    let isPrompterOpen = true;
+    let isSidebarOpen = true;
+
+    // Presentation Slide Deck Data
+    const slides = [
+      // SLIDE 1
+      {
+        id: 1,
+        title: "Punto 01: Manejo de Permisos y Jerarquía",
+        subtitle: "Mecanismo de seguridad multiusuario y regla de la coincidencia más específica",
+        time: "00:00 - 00:45",
+        dialogue: [
+          { speaker: "Ángela", text: "Oye Jairo, qué bueno que nos juntamos a repasar esto antes de subir el trabajo. La verdad es que al principio me chocaba mucho que Linux fuera tan 'estricto' con los archivos. Si intento editar algo del sistema, me rebota de una." },
+          { speaker: "Jairo", text: "¡Es que esa es la magia de Linux, Ángela! Como es un sistema multiusuario desde sus orígenes, la seguridad se basa en saber exactamente quién eres y qué puedes hacer. El sistema divide todo en tres niveles: Propietario ($u$), Grupo ($g$) y Otros ($o$)." },
+          { speaker: "Ángela", text: "Vale, pero supongamos que yo soy la dueña de un archivo script, pero a mi usuario le quito los permisos y se los dejo solo a mi grupo. Si yo pertenezco a ese grupo... ¿el sistema me deja entrar?" },
+          { speaker: "Jairo", text: "¡Buena trampa! Pero no. El kernel aplica la regla de la coincidencia más específica: evalúa Root → Propietario → Grupo → Otros. Como eres la propietaria, se queda en ese nivel. Si ahí tienes denegado el acceso, te frena de inmediato sin mirar los permisos de tu grupo." }
+        ],
+        render: () => `
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full items-center">
+            <!-- Left Column: Terminal & Metadata Breakdown -->
+            <div class="space-y-4">
+              <div class="terminal-window rounded-xl p-4 font-mono text-xs text-slate-300 glow-cyan">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2 text-slate-500">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                    <span class="ml-2 text-slate-300 font-bold">$ ls -l /srv/archivos</span>
+                  </div>
+                  <span class="text-[10px] text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">Metadatos de Linux</span>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-sm">
+                    <span class="text-slate-500">-rw-r--r-- 1</span> 
+                    <span class="text-rose-400 font-bold px-1 bg-rose-950/60 rounded border border-rose-800">jairo</span> 
+                    <span class="text-amber-400 font-bold px-1 bg-amber-950/60 rounded border border-amber-800">estudiantes</span> 
+                    1024 Oct 1 10:00 script.sh
+                  </p>
+                  <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-800/80 text-center">
+                    <div class="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+                      <span class="block text-rose-400 font-bold text-xs">Propietario (u)</span>
+                      <span class="text-[10px] text-slate-400">Paso 1 de Evaluación</span>
+                    </div>
+                    <div class="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                      <span class="block text-amber-400 font-bold text-xs">Grupo (g)</span>
+                      <span class="text-[10px] text-slate-400">Paso 2 de Evaluación</span>
+                    </div>
+                    <div class="p-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+                      <span class="block text-cyan-400 font-bold text-xs">Otros (o)</span>
+                      <span class="text-[10px] text-slate-400">Paso 3 de Evaluación</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cascade Diagram -->
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5">
+                <h4 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <i class="fa-solid fa-diagram-project text-cyan-400"></i>
+                  Algoritmo del Kernel: Coincidencia Más Específica
+                </h4>
+                <div class="space-y-2 text-xs">
+                  <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/60">
+                    <span class="text-emerald-300 font-medium">0. ¿Es usuario Root (UID=0)?</span>
+                    <span class="text-emerald-400 font-bold font-mono">Bypass Total / Acceso Grant</span>
+                  </div>
+                  <div class="flex items-center justify-between p-2 rounded-lg bg-rose-950/50 border border-rose-800/80 glow-rose">
+                    <span class="text-rose-200 font-medium">1. ¿UID coincide con Propietario ($u$)?</span>
+                    <span class="text-rose-400 font-bold font-mono">Aplica bits 'u' y ¡SE DETIENE!</span>
+                  </div>
+                  <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 opacity-50">
+                    <span class="text-slate-400">2. ¿GID coincide con Grupo ($g$)?</span>
+                    <span class="text-slate-500 font-mono">Inalcanzable si coincidió en paso 1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Visual Rings & Trap Rule -->
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col justify-between h-full space-y-4">
+              <div>
+                <span class="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold">Anillos de Protección</span>
+                <h3 class="text-lg font-extrabold text-slate-100 mt-1">Aislamiento por Capas</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                  El sistema operativo no combina ni acumula permisos. Si eres el dueño del archivo, el Kernel se detiene inmediatamente en la primera coincidencia.
+                </p>
+              </div>
+
+              <!-- Graphic SVG Rings -->
+              <div class="flex justify-center items-center py-2">
+                <svg viewBox="0 0 200 200" class="w-48 h-48">
+                  <circle cx="100" cy="100" r="90" fill="none" stroke="#06b6d4" stroke-width="6" stroke-dasharray="4 2" opacity="0.4"/>
+                  <circle cx="100" cy="100" r="65" fill="none" stroke="#f59e0b" stroke-width="8" opacity="0.7"/>
+                  <circle cx="100" cy="100" r="40" fill="none" stroke="#f43f5e" stroke-width="10"/>
+                  <circle cx="100" cy="100" r="16" fill="#10b981"/>
+                  <text x="100" y="104" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="bold">ROOT</text>
+                  <text x="100" y="73" text-anchor="middle" fill="#f43f5e" font-size="8" font-weight="bold">USER (u)</text>
+                  <text x="100" y="47" text-anchor="middle" fill="#f59e0b" font-size="8" font-weight="bold">GROUP (g)</text>
+                  <text x="100" y="22" text-anchor="middle" fill="#06b6d4" font-size="8" font-weight="bold">OTHERS (o)</text>
+                </svg>
+              </div>
+
+              <!-- Callout Trap Rule -->
+              <div class="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base mt-0.5 shrink-0"></i>
+                <div>
+                  <strong class="text-amber-200">Pregunta Trampa de Examen:</strong>
+                  <p class="text-[11px] text-amber-300/90 mt-0.5">Si <code class="bg-amber-950/80 px-1 rounded text-amber-200 font-mono">u=---</code> y <code class="bg-amber-950/80 px-1 rounded text-amber-200 font-mono">g=rwx</code>, el dueño <strong>NO</strong> podrá acceder aunque pertenezca a ese grupo.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // SLIDE 2
+      {
+        id: 2,
+        title: "Punto 02: Permisos Básicos (r, w, x)",
+        subtitle: "Diferencia de comportamiento entre Archivos de texto y Directorios",
+        time: "00:45 - 01:45",
+        dialogue: [
+          { speaker: "Ángela", text: "Entendido. Ahora hablemos de los famosos permisos Lectura ($r$), Escritura ($w$) y Ejecución ($x$). Yo pensaba que hacían exactamente lo mismo en cualquier lugar, pero en las carpetas cambian, ¿no?" },
+          { speaker: "Jairo", text: "Así es. Para un archivo es intuitivo: $r$ te permite leer su texto, $w$ te deja modificarlo o sobrescribirlo, y $x$ te permite correrlo si es un programa o script." },
+          { speaker: "Ángela", text: "¿Y en una carpeta o directorio?" },
+          { speaker: "Jairo", text: "Ahí cambia todo: $r$ te permite listar los archivos que están adentro con ls. $w$ te otorga el poder de crear, borrar o renombrar archivos dentro de la carpeta. Y $x$ es la llave fundamental para entrar a la carpeta con cd y consultar sus metadatos." }
+        ],
+        render: () => `
+          <div class="space-y-5">
+            <!-- Comparative Matrix Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Read Card -->
+              <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 glow-cyan">
+                <div class="flex items-center gap-2 text-cyan-400 font-bold font-mono text-sm border-b border-slate-800 pb-2">
+                  <span class="w-7 h-7 rounded-lg bg-cyan-500/20 flex items-center justify-center text-sm font-bold">r</span>
+                  <span>Lectura (Read)</span>
+                </div>
+                <div class="space-y-2.5 text-xs">
+                  <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block font-semibold text-[11px] mb-1">En Archivo 📄</span>
+                    <span class="text-slate-200">Ver contenido de texto (<code class="text-cyan-300 font-mono">cat</code>, <code class="text-cyan-300 font-mono">less</code>, <code class="text-cyan-300 font-mono">nano</code>)</span>
+                  </div>
+                  <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block font-semibold text-[11px] mb-1">En Directorio 📂</span>
+                    <span class="text-cyan-300 font-semibold">Listar nombres de archivos (<code class="text-cyan-300 font-mono">ls</code>)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Write Card -->
+              <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 glow-amber">
+                <div class="flex items-center gap-2 text-amber-400 font-bold font-mono text-sm border-b border-slate-800 pb-2">
+                  <span class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-sm font-bold">w</span>
+                  <span>Escritura (Write)</span>
+                </div>
+                <div class="space-y-2.5 text-xs">
+                  <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block font-semibold text-[11px] mb-1">En Archivo 📄</span>
+                    <span class="text-slate-200">Modificar, editar o vaciar contenido</span>
+                  </div>
+                  <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block font-semibold text-[11px] mb-1">En Directorio 📂</span>
+                    <span class="text-amber-300 font-semibold">Crear, borrar o renombrar dentro</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Execute Card -->
+              <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 glow-emerald">
+                <div class="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm border-b border-slate-800 pb-2">
+                  <span class="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-sm font-bold">x</span>
+                  <span>Ejecución (Execute)</span>
+                </div>
+                <div class="space-y-2.5 text-xs">
+                  <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block font-semibold text-[11px] mb-1">En Archivo 📄</span>
+                    <span class="text-slate-200">Ejecutar script/binario (<code class="text-emerald-300 font-mono">./script.sh</code>)</span>
+                  </div>
+                  <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block font-semibold text-[11px] mb-1">En Directorio 📂</span>
+                    <span class="text-emerald-300 font-semibold">Atravesar / Entrar (<code class="text-emerald-300 font-mono">cd</code>) &amp; metadatos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bash Permission Error Examples -->
+            <div class="terminal-window rounded-xl p-4 font-mono text-xs">
+              <div class="text-slate-400 mb-2 border-b border-slate-800 pb-2 flex items-center justify-between">
+                <span><i class="fa-solid fa-terminal text-cyan-400 mr-2"></i>Errores Comunes de Permisos en Bash</span>
+                <span class="text-[10px] text-slate-500">Pruebas en Consola</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800/80">
+                  <span class="text-slate-500"># Intentar borrar dentro de carpeta sin 'w'</span>
+                  <p class="text-slate-200 mt-1">$ rm /carpeta_sin_w/archivo.txt</p>
+                  <p class="text-rose-400 mt-1">rm: cannot remove '/carpeta_sin_w/archivo.txt': Permission denied</p>
+                </div>
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800/80">
+                  <span class="text-slate-500"># Intentar listar archivos sin 'r'</span>
+                  <p class="text-slate-200 mt-1">$ ls /carpeta_sin_r/</p>
+                  <p class="text-rose-400 mt-1">ls: cannot open directory '/carpeta_sin_r/': Permission denied</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // SLIDE 3
+      {
+        id: 3,
+        title: "Punto 03: Funcionamiento de chmod",
+        subtitle: "Notación Simbólica (El Bisturí) vs. Notación Octal (El Martillo)",
+        time: "01:45 - 03:00",
+        dialogue: [
+          { speaker: "Ángela", text: "¡Aha! Y cuando queremos cambiar esos permisos usamos el comando chmod. Pero en la guía vi dos métodos: la notación simbólica y la octal. ¿Cuál es la diferencia práctica?" },
+          { speaker: "Jairo", text: "La notación simbólica es como un bisturí. Usas letras como u (usuario), g (grupo), o (otros) con + o -. Por ejemplo, con chmod +x script.sh solo 'enciendes' la ejecución sin tocar el resto." },
+          { speaker: "Ángela", text: "Es ideal para ajustes puntuales. ¿Y la notación octal?" },
+          { speaker: "Jairo", text: "Esa es como un martillo: reescribe los tres grupos de un solo golpe sumando valores binarios: Lectura=4, Escritura=2 y Ejecución=1. Si pones chmod 755, el 7 viene de $4+2+1$, y los 5 de $4+0+1$, fijándolo de forma absoluta." }
+        ],
+        render: () => `
+          <div class="space-y-5">
+            <!-- Analogy Header Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Bisturí -->
+              <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/40 glow-cyan">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="p-2.5 bg-cyan-500/20 text-cyan-400 rounded-lg text-lg">
+                    <i class="fa-solid fa-scalpel"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-slate-100 text-sm">Notación Simbólica ("El Bisturí")</h4>
+                    <span class="text-[11px] text-cyan-400 font-mono font-semibold">Ajuste Relativo / Puntual</span>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-400 mb-2">Modifica únicamente los bits declarados manteniendo intacto el resto.</p>
+                <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-200 border border-slate-800">
+                  $ chmod <span class="text-cyan-400 font-bold">u+x,g-w</span> archivo.sh
+                </div>
+              </div>
+
+              <!-- Martillo -->
+              <div class="bg-slate-950 p-4 rounded-xl border border-amber-500/40 glow-amber">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-lg text-lg">
+                    <i class="fa-solid fa-hammer"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-slate-100 text-sm">Notación Octal ("El Martillo")</h4>
+                    <span class="text-[11px] text-amber-400 font-mono font-semibold">Reescritura Absoluta</span>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-400 mb-2">Sobrescribe incondicionalmente los 9 bits aplicando la suma binaria octal.</p>
+                <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-200 border border-slate-800">
+                  $ chmod <span class="text-amber-400 font-bold">755</span> archivo.sh
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive Octal Calculator Widget -->
+            <div class="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-xl">
+              <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+                <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-calculator text-cyan-400"></i>
+                  Calculadora Octal Interactiva
+                </h4>
+                <span class="text-cyan-400 font-mono text-xs bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">Valores: r=4, w=2, x=1</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 text-center text-xs font-mono">
+                <!-- User Bit Selector -->
+                <div class="p-3 bg-slate-900 rounded-xl border border-rose-500/30 space-y-2">
+                  <span class="text-rose-400 font-bold block text-xs">Propietario (u)</span>
+                  <div class="flex justify-center gap-2 text-slate-200">
+                    <label class="cursor-pointer"><input type="checkbox" id="u-r" checked onchange="calcOctal()" class="accent-rose-500"> r(4)</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="u-w" checked onchange="calcOctal()" class="accent-rose-500"> w(2)</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="u-x" checked onchange="calcOctal()" class="accent-rose-500"> x(1)</label>
+                  </div>
+                  <div class="text-base font-bold text-slate-100 bg-slate-950 py-1 rounded border border-slate-800" id="u-num">7</div>
+                </div>
+
+                <!-- Group Bit Selector -->
+                <div class="p-3 bg-slate-900 rounded-xl border border-amber-500/30 space-y-2">
+                  <span class="text-amber-400 font-bold block text-xs">Grupo (g)</span>
+                  <div class="flex justify-center gap-2 text-slate-200">
+                    <label class="cursor-pointer"><input type="checkbox" id="g-r" checked onchange="calcOctal()" class="accent-amber-500"> r(4)</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="g-w" onchange="calcOctal()" class="accent-amber-500"> w(2)</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="g-x" checked onchange="calcOctal()" class="accent-amber-500"> x(1)</label>
+                  </div>
+                  <div class="text-base font-bold text-slate-100 bg-slate-950 py-1 rounded border border-slate-800" id="g-num">5</div>
+                </div>
+
+                <!-- Others Bit Selector -->
+                <div class="p-3 bg-slate-900 rounded-xl border border-cyan-500/30 space-y-2">
+                  <span class="text-cyan-400 font-bold block text-xs">Otros (o)</span>
+                  <div class="flex justify-center gap-2 text-slate-200">
+                    <label class="cursor-pointer"><input type="checkbox" id="o-r" checked onchange="calcOctal()" class="accent-cyan-500"> r(4)</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="o-w" onchange="calcOctal()" class="accent-cyan-500"> w(2)</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="o-x" checked onchange="calcOctal()" class="accent-cyan-500"> x(1)</label>
+                  </div>
+                  <div class="text-base font-bold text-slate-100 bg-slate-950 py-1 rounded border border-slate-800" id="o-num">5</div>
+                </div>
+              </div>
+
+              <!-- Preset Quick Buttons -->
+              <div class="mt-3 flex items-center justify-between flex-wrap gap-2 text-xs font-mono">
+                <span class="text-slate-400">Atajos Comunes:</span>
+                <div class="flex gap-1.5">
+                  <button onclick="setOctalPreset(7,5,5)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700">755</button>
+                  <button onclick="setOctalPreset(6,4,4)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700">644</button>
+                  <button onclick="setOctalPreset(7,0,0)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700">700</button>
+                  <button onclick="setOctalPreset(7,7,7)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-rose-300 rounded border border-slate-700">777</button>
+                </div>
+              </div>
+
+              <div class="mt-3 p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between text-xs font-mono">
+                <span class="text-slate-400">Resultado Generado:</span>
+                <span class="text-cyan-300 font-bold" id="octal-cmd-preview">chmod 755 archivo.sh (-rwxr-xr-x)</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // SLIDE 4
+      {
+        id: 4,
+        title: "Punto 04: El Filtro de Seguridad umask",
+        subtitle: "Resta preventiva de permisos en la creación de nuevos archivos y directorios",
+        time: "03:00 - 04:00",
+        dialogue: [
+          { speaker: "Ángela", text: "Oye Jairo, me dio curiosidad algo creando carpetas ayer. ¿Por qué cuando creo un archivo nuevo en bash nace con 644 (rw-r--r--) y nunca nace ejecutable?" },
+          { speaker: "Jairo", text: "Por pura seguridad preventiva. Linux usa la umask, que es un filtro que le 'resta' permisos a una base inicial al crear elementos." },
+          { speaker: "Ángela", text: "¿Cuáles son esas bases?" },
+          { speaker: "Jairo", text: "Para archivos la base es 666 y para carpetas 777. Con la máscara estándar 022: 666 - 022 = 644 en archivos, y 777 - 022 = 755 en carpetas. Así se evita que descargues un script y se ejecute automáticamente sin permiso previo." }
+        ],
+        render: () => `
+          <div class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Files Base -->
+              <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 glow-cyan">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <span class="text-slate-200 font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-file-code text-cyan-400"></i> Archivos Nuevos
+                  </span>
+                  <span class="text-xs bg-cyan-500/20 text-cyan-300 font-mono px-2.5 py-0.5 rounded border border-cyan-800">Base Máx: 666</span>
+                </div>
+                
+                <div class="space-y-2.5 text-xs font-mono">
+                  <div class="flex justify-between text-slate-400">
+                    <span>Base Máxima Inicial:</span>
+                    <span class="text-slate-200 font-bold">666 (rw-rw-rw-)</span>
+                  </div>
+                  <div class="flex justify-between text-rose-400">
+                    <span>- Filtro umask (022):</span>
+                    <span class="font-bold">022 (---w--w-)</span>
+                  </div>
+                  <div class="pt-2 border-t border-slate-800 flex justify-between text-cyan-400 font-bold text-sm bg-slate-900/80 p-2 rounded">
+                    <span>= Permiso Resultante:</span>
+                    <span>644 (rw-r--r--)</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-400 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                  🛡️ <strong>Seguridad Antimalware:</strong> Ningún archivo nace con permiso de ejecución ($x$) activo por defecto.
+                </p>
+              </div>
+
+              <!-- Folders Base -->
+              <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 glow-amber">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <span class="text-slate-200 font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-folder-open text-amber-400"></i> Carpetas Nuevas
+                  </span>
+                  <span class="text-xs bg-amber-500/20 text-amber-300 font-mono px-2.5 py-0.5 rounded border border-amber-800">Base Máx: 777</span>
+                </div>
+                
+                <div class="space-y-2.5 text-xs font-mono">
+                  <div class="flex justify-between text-slate-400">
+                    <span>Base Máxima Inicial:</span>
+                    <span class="text-slate-200 font-bold">777 (rwxrwxrwx)</span>
+                  </div>
+                  <div class="flex justify-between text-rose-400">
+                    <span>- Filtro umask (022):</span>
+                    <span class="font-bold">022 (---w--w-)</span>
+                  </div>
+                  <div class="pt-2 border-t border-slate-800 flex justify-between text-amber-400 font-bold text-sm bg-slate-900/80 p-2 rounded">
+                    <span>= Permiso Resultante:</span>
+                    <span>755 (rwxr-xr-x)</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-400 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                  🔑 <strong>Navegación Obligatoria:</strong> Las carpetas requieren 'x' por defecto para poder acceder mediante <code class="text-amber-300">cd</code>.
+                </p>
+              </div>
+            </div>
+
+            <!-- Custom Privacy Tip -->
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+              <div class="space-y-1">
+                <span class="text-emerald-400 font-bold flex items-center gap-2">
+                  <i class="fa-solid fa-lock"></i>
+                  Modo Privacidad Absoluta de Usuario
+                </span>
+                <p class="text-slate-400">Si ejecutas <code class="text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded font-mono">umask 077</code> en la sesión actual de bash:</p>
+              </div>
+              <div class="font-mono text-right text-xs bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <div class="text-emerald-400 font-bold">Archivos: 600 (rw-------)</div>
+                <div class="text-emerald-400 font-bold">Carpetas: 700 (rwx------)</div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // SLIDE 5
+      {
+        id: 5,
+        title: "Punto 05: Profundización en Carpetas",
+        subtitle: "La Ventana (Lectura r) vs. La Llave (Ejecución x)",
+        time: "04:00 - 05:00",
+        dialogue: [
+          { speaker: "Ángela", text: "Esta pregunta me pareció genial: '¿Por qué puedo entrar a una carpeta con cd si tengo x, pero no puedo hacer ls si me falta r?'" },
+          { speaker: "Jairo", text: "Es la analogía de la habitación. Piensa en la carpeta como un cuarto cerrado: La Lectura ($r$) es la ventana que te permite asomarte y ver qué hay adentro con ls. La Ejecución ($x$) es la llave de la puerta para entrar con cd." },
+          { speaker: "Ángela", text: "¡Ya lo entiendo! Si tengo la llave ($x$) pero la ventana está tapiada (sin $r$), puedo cruzar la puerta con cd y leer un archivo directo si sé su ruta exacta... ¡pero no puedo mirar por la ventana para listar!" },
+          { speaker: "Jairo", text: "¡Perfecto! Esa es la diferencia entre explorar la lista y atravesar la ruta." }
+        ],
+        render: () => `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 h-full items-center">
+            <!-- Read Window Analogy -->
+            <div class="bg-slate-950 p-5 rounded-2xl border border-cyan-500/40 flex flex-col justify-between space-y-4 glow-cyan">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                  <div class="p-3 bg-cyan-500/20 text-cyan-400 rounded-xl text-xl">
+                    <i class="fa-solid fa-border-all"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-slate-100 text-sm">Lectura ($r$) = La Ventana</h4>
+                    <span class="text-xs text-cyan-400 font-mono font-semibold">Permite asomarse</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-slate-900 p-4 rounded-xl text-center space-y-2 border border-slate-800">
+                <div class="text-4xl text-cyan-400 my-2"><i class="fa-solid fa-eye"></i></div>
+                <p class="text-xs text-slate-300">Te deja ejecutar <code class="text-cyan-300 font-bold font-mono bg-slate-950 px-1.5 py-0.5 rounded">ls /carpeta</code> para listar nombres de archivos.</p>
+              </div>
+
+              <div class="p-3 bg-cyan-950/40 border border-cyan-800/40 rounded-xl text-[11px] text-cyan-300">
+                ⚠️ <strong>Sin la llave ($x$):</strong> Ves que existen los archivos, pero NO puedes acceder a su contenido, permisos ni tamaño.
+              </div>
+            </div>
+
+            <!-- Execute Key Analogy -->
+            <div class="bg-slate-950 p-5 rounded-2xl border border-emerald-500/40 flex flex-col justify-between space-y-4 glow-emerald">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                  <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl text-xl">
+                    <i class="fa-solid fa-key"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-slate-100 text-sm">Ejecución ($x$) = La Llave</h4>
+                    <span class="text-xs text-emerald-400 font-mono font-semibold">Permite cruzar la puerta</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-slate-900 p-4 rounded-xl text-center space-y-2 border border-slate-800">
+                <div class="text-4xl text-emerald-400 my-2"><i class="fa-solid fa-door-open"></i></div>
+                <p class="text-xs text-slate-300">Te deja hacer <code class="text-emerald-300 font-bold font-mono bg-slate-950 px-1.5 py-0.5 rounded">cd /carpeta</code> y leer un archivo directo si conoces la ruta.</p>
+              </div>
+
+              <div class="p-3 bg-emerald-950/40 border border-emerald-800/40 rounded-xl text-[11px] text-emerald-300">
+                🗝️ <strong>Sin la ventana ($r$):</strong> Puedes entrar y leer <code class="font-mono">cat /carpeta/doc.txt</code>, pero no puedes usar <code class="font-mono">ls</code> para explorar.
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // SLIDE 6 (EXPANDED PRACTICAL CASE)
+      {
+        id: 6,
+        title: "Punto 06: Caso Práctico - musica_compartida",
+        subtitle: "Configuración colaborativa con setgid (2775), Sticky Bit (3775) y verificación",
+        time: "05:00 - 06:15",
+        dialogue: [
+          { speaker: "Ángela", text: "Excelente. Ahora apliquemos todo esto al caso práctico de la carpeta compartida musica_compartida para el grupo exitosmusic. ¿Cómo fue la secuencia?" },
+          { speaker: "Jairo", text: "Primero, asignamos la propiedad del grupo ejecutando: sudo chgrp exitosmusic musica_compartida." },
+          { speaker: "Ángela", text: "Bien. Luego teníamos el reto de que al crear una canción nueva no quedara bloqueada con el grupo primario del creador." },
+          { speaker: "Jairo", text: "Activamos el permiso especial setgid con sudo chmod 2775 musica_compartida. El 2 forza que cualquier archivo herede automáticamente el grupo exitosmusic. Y ajustamos umask temporal a 0002 para dar escritura al grupo." },
+          { speaker: "Ángela", text: "Y para evitar que alguno borre las canciones del otro por error..." },
+          { speaker: "Jairo", text: "Aplicamos el Sticky Bit con sudo chmod 3775. El 3 combina setgid (2) y Sticky Bit (1). Permite a ambos crear/editar, pero solo el creador original o admin puede borrar. En la terminal se lee: drwxrwsr-t." }
+        ],
+        render: () => `
+          <div class="space-y-4">
+            <!-- Top Command Pipeline -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Step 1 -->
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span class="text-[10px] font-mono bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded font-bold">Paso 1: Grupo Común</span>
+                <p class="text-xs font-mono text-slate-200 bg-slate-900 p-2 rounded border border-slate-800">$ sudo chgrp exitosmusic musica_compartida</p>
+                <p class="text-[11px] text-slate-400">Asigna la titularidad al grupo de trabajo.</p>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold">Paso 2: Herencia setgid (2)</span>
+                <p class="text-xs font-mono text-slate-200 bg-slate-900 p-2 rounded border border-slate-800">$ sudo chmod 2775 musica_compartida</p>
+                <p class="text-[11px] text-slate-400">Archivos heredan automáticamente el grupo <code class="text-amber-300">exitosmusic</code>.</p>
+              </div>
+
+              <!-- Step 3 -->
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span class="text-[10px] font-mono bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-bold">Paso 3: Sticky Bit (+t = 1)</span>
+                <p class="text-xs font-mono text-slate-200 bg-slate-900 p-2 rounded border border-slate-800">$ sudo chmod 3775 musica_compartida</p>
+                <p class="text-[11px] text-slate-400">Combina $2000 (\text{setgid}) + 1000 (\text{sticky}) = \mathbf{3775}$.</p>
+              </div>
+            </div>
+
+            <!-- Simulated Directory & Test Window -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Visual Architecture Box -->
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5">
+                <h4 class="text-xs font-bold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span><i class="fa-solid fa-folder-tree text-cyan-400 mr-2"></i>Estructura en /srv/musica_compartida/</span>
+                  <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">umask 0002 activa</span>
+                </h4>
+                <div class="font-mono text-[11px] space-y-2 bg-slate-900 p-3 rounded-lg border border-slate-800">
+                  <div class="text-amber-300 font-bold bg-amber-950/40 p-1 rounded">drwxrwsr-t 2 root exitosmusic 4096 /musica_compartida/</div>
+                  <div class="pl-4 text-slate-300 flex items-center gap-1.5">
+                    <span class="text-slate-600">├──</span>
+                    <span class="text-slate-200">-rw-rw-r-- jairo exitosmusic</span>
+                    <span class="text-cyan-300 font-bold">cancion1_jairo.mp3</span>
+                  </div>
+                  <div class="pl-4 text-slate-300 flex items-center gap-1.5">
+                    <span class="text-slate-600">└──</span>
+                    <span class="text-slate-200">-rw-rw-r-- angela exitosmusic</span>
+                    <span class="text-rose-300 font-bold">cancion2_angela.mp3</span>
+                  </div>
+                </div>
+                <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800 text-[10px] text-slate-300">
+                  <i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i>
+                  Ambos usuarios tienen permiso de edición mutua por pertenecer a <code class="text-amber-300">exitosmusic</code>.
+                </div>
+              </div>
+
+              <!-- Terminal Test -->
+              <div class="terminal-window p-4 rounded-xl space-y-2 text-xs font-mono glow-rose">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2 text-slate-400">
+                  <span>Prueba de Borrado con Sticky Bit</span>
+                  <span class="text-rose-400 font-bold bg-rose-950 px-2 py-0.5 rounded border border-rose-800">Protección Activa</span>
+                </div>
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800/90 space-y-1.5">
+                  <p class="text-slate-500"># Ángela intenta borrar la canción creada por Jairo:</p>
+                  <p class="text-slate-200">$ angela@linux:~$ rm musica_compartida/cancion1_jairo.mp3</p>
+                  <p class="text-rose-400 font-bold">rm: cannot remove 'cancion1_jairo.mp3': Operation not permitted</p>
+                </div>
+                <p class="text-[11px] text-slate-400 pt-1">
+                  ✓ El Sticky Bit (<code class="text-rose-300">t</code>) impide que usuarios no propietarios eliminen archivos ajenos.
+                </p>
+              </div>
+            </div>
+
+            <!-- Key Summary Card -->
+            <div class="p-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 rounded-xl border border-amber-500/30 flex items-center justify-between text-xs glow-amber">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-lg text-lg shrink-0">
+                  <i class="fa-solid fa-key"></i>
+                </div>
+                <div>
+                  <span class="text-amber-300 font-bold block text-xs">Clave de Interpretación Terminal:</span>
+                  <span class="text-slate-300 text-[11px]">En la cadena <code class="text-slate-100 font-mono bg-slate-800 px-1.5 py-0.5 rounded">drwxrwsr-t</code>: <code class="text-amber-300 font-bold">s</code> minúscula = setgid + ejecución activa; <code class="text-rose-300 font-bold">t</code> minúscula = Sticky Bit + ejecución activa.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    // Initialize Presentation Deck
+    function initDeck() {
+      document.getElementById('total-slides-num').innerText = slides.length;
+      renderThumbnails();
+      renderDotIndicators();
+      loadSlide(0);
+    }
+
+    // Render Left PPT Thumbnails
+    function renderThumbnails() {
+      const container = document.getElementById('thumbnail-container');
+      container.innerHTML = slides.map((slide, idx) => `
+        <button onclick="loadSlide(${idx})" class="w-full text-left p-3 rounded-xl border transition-all ${idx === currentSlide ? 'bg-cyan-950/70 border-cyan-500/60 text-cyan-200 glow-cyan' : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:bg-slate-800/50'}">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 mb-1">
+            <span class="font-bold text-slate-400">Diapositiva 0${slide.id}</span>
+            <span class="text-amber-400 font-mono">${slide.time.split(' - ')[0]}</span>
+          </div>
+          <p class="text-xs font-bold line-clamp-1 text-slate-200">${slide.title.split(':')[1] || slide.title}</p>
+        </button>
+      `).join('');
+    }
+
+    // Render Slide Dot Indicators
+    function renderDotIndicators() {
+      const container = document.getElementById('dot-indicators');
+      container.innerHTML = slides.map((_, idx) => `
+        <button onclick="loadSlide(${idx})" class="h-2.5 rounded-full transition-all ${idx === currentSlide ? 'bg-cyan-400 w-7' : 'bg-slate-700 w-2.5 hover:bg-slate-500'}" title="Ir a la lámina ${idx + 1}"></button>
+      `).join('');
+    }
+
+    // Load Specific Slide
+    function loadSlide(index) {
+      if (index < 0 || index >= slides.length) return;
+      currentSlide = index;
+      const slide = slides[currentSlide];
+
+      // Render Viewport
+      const viewport = document.getElementById('slide-viewport');
+      viewport.className = 'slide-enter flex-1 bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col justify-between shadow-2xl relative min-h-[580px]';
+      
+      viewport.innerHTML = `
+        <div>
+          <!-- Slide Header -->
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+            <div>
+              <span class="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">${slide.title}</span>
+              <h2 class="text-lg sm:text-xl md:text-2xl font-extrabold text-slate-100 mt-0.5">${slide.subtitle}</h2>
+            </div>
+            <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-mono text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full shrink-0">
+              <i class="fa-regular fa-clock"></i> ${slide.time}
+            </span>
+          </div>
+          
+          <!-- Slide Dynamic Content -->
+          <div class="mt-2">
+            ${slide.render()}
+          </div>
+        </div>
+      `;
+
+      // Render Prompter Dialogue
+      document.getElementById('prompter-time-tag').innerText = slide.time;
+      const prompterBody = document.getElementById('prompter-body');
+      prompterBody.innerHTML = slide.dialogue.map(item => {
+        const isAngela = item.speaker.includes("Ángela");
+        return `
+          <div class="p-3.5 rounded-xl ${isAngela ? 'bg-cyan-950/40 border border-cyan-800/50 ml-2' : 'bg-amber-950/40 border border-amber-800/50 mr-2'}">
+            <span class="block text-xs font-bold ${isAngela ? 'text-cyan-400' : 'text-amber-400'} mb-1 flex items-center gap-1.5">
+              <i class="fa-solid ${isAngela ? 'fa-user-gear' : 'fa-terminal'}"></i>
+              ${item.speaker}
+            </span>
+            <p class="text-xs text-slate-200 leading-relaxed">${item.text}</p>
+          </div>
+        `;
+      }).join('');
+
+      // Update Controls
+      document.getElementById('current-slide-num').innerText = currentSlide + 1;
+      document.getElementById('prev-btn').disabled = currentSlide === 0;
+      document.getElementById('next-btn').disabled = currentSlide === slides.length - 1;
+
+      renderThumbnails();
+      renderDotIndicators();
+
+      // Render KaTeX Math
+      if (window.renderMathInElement) {
+        renderMathInElement(viewport, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    }
+
+    // Navigation Commands
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) loadSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) loadSlide(currentSlide - 1);
+    }
+
+    function togglePrompter() {
+      const panel = document.getElementById('prompter-panel');
+      const btnText = document.getElementById('prompter-btn-text');
+      isPrompterOpen = !isPrompterOpen;
+
+      if (isPrompterOpen) {
+        panel.classList.remove('hidden');
+        btnText.innerText = "Guion Sincronizado";
+      } else {
+        panel.classList.add('hidden');
+        btnText.innerText = "Ver Guion";
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('slide-sidebar');
+      isSidebarOpen = !isSidebarOpen;
+      if (isSidebarOpen) {
+        sidebar.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('hidden');
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // Octal Calculator logic
+    function calcOctal() {
+      const u_r = document.getElementById('u-r')?.checked ? 4 : 0;
+      const u_w = document.getElementById('u-w')?.checked ? 2 : 0;
+      const u_x = document.getElementById('u-x')?.checked ? 1 : 0;
+      const uSum = u_r + u_w + u_x;
+
+      const g_r = document.getElementById('g-r')?.checked ? 4 : 0;
+      const g_w = document.getElementById('g-w')?.checked ? 2 : 0;
+      const g_x = document.getElementById('g-x')?.checked ? 1 : 0;
+      const gSum = g_r + g_w + g_x;
+
+      const o_r = document.getElementById('o-r')?.checked ? 4 : 0;
+      const o_w = document.getElementById('o-w')?.checked ? 2 : 0;
+      const o_x = document.getElementById('o-x')?.checked ? 1 : 0;
+      const oSum = o_r + o_w + o_x;
+
+      if (document.getElementById('u-num')) document.getElementById('u-num').innerText = uSum;
+      if (document.getElementById('g-num')) document.getElementById('g-num').innerText = gSum;
+      if (document.getElementById('o-num')) document.getElementById('o-num').innerText = oSum;
+
+      const formatString = (r, w, x) => (r ? 'r' : '-') + (w ? 'w' : '-') + (x ? 'x' : '-');
+      const symStr = '-' + formatString(u_r, u_w, u_x) + formatString(g_r, g_w, g_x) + formatString(o_r, o_w, o_x);
+
+      if (document.getElementById('octal-cmd-preview')) {
+        document.getElementById('octal-cmd-preview').innerText = `chmod ${uSum}${gSum}${oSum} archivo.sh (${symStr})`;
+      }
+    }
+
+    function setOctalPreset(u, g, o) {
+      if (document.getElementById('u-r')) document.getElementById('u-r').checked = (u & 4) !== 0;
+      if (document.getElementById('u-w')) document.getElementById('u-w').checked = (u & 2) !== 0;
+      if (document.getElementById('u-x')) document.getElementById('u-x').checked = (u & 1) !== 0;
+
+      if (document.getElementById('g-r')) document.getElementById('g-r').checked = (g & 4) !== 0;
+      if (document.getElementById('g-w')) document.getElementById('g-w').checked = (g & 2) !== 0;
+      if (document.getElementById('g-x')) document.getElementById('g-x').checked = (g & 1) !== 0;
+
+      if (document.getElementById('o-r')) document.getElementById('o-r').checked = (o & 4) !== 0;
+      if (document.getElementById('o-w')) document.getElementById('o-w').checked = (o & 2) !== 0;
+      if (document.getElementById('o-x')) document.getElementById('o-x').checked = (o & 1) !== 0;
+
+      calcOctal();
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    window.onload = initDeck;
+  </script>
+</body>
+</html>
